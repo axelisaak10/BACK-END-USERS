@@ -15,6 +15,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:3008',
       'https://apigatwey-seguridad.onrender.com',
+      'https://fron-end-proyecto-seguridad.vercel.app',
     ],
     credentials: true,
   });
