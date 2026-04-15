@@ -186,16 +186,28 @@ export class AuthService {
 
   async validateUser(loginDto: LoginDto) {
     const { email, password } = loginDto;
+    const normalizedEmail = email.toLowerCase();
+    
+    console.log(`[AUTH-DEBUG] Intentando validar usuario: ${normalizedEmail}`);
+
     const { data: user, error } = await this.supabase
       .from('usuarios')
       .select('id, password, permisos_globales')
-      .eq('email', email)
+      .eq('email', normalizedEmail)
       .single();
-    if (error || !user)
+
+    if (error || !user) {
+      console.log(`[AUTH-DEBUG] Usuario no encontrado: ${normalizedEmail}`);
       throw new UnauthorizedException('Credenciales invalidas');
+    }
 
     const isMatched = await bcrypt.compare(password, user.password);
-    if (!isMatched) throw new UnauthorizedException('Credenciales invalidas');
+    if (!isMatched) {
+      console.log(`[AUTH-DEBUG] Contraseña incorrecta para: ${normalizedEmail}`);
+      throw new UnauthorizedException('Credenciales invalidas');
+    }
+
+    console.log(`[AUTH-DEBUG] Validación exitosa: ${normalizedEmail}`);
 
     const permisosNombres = await this.resolvePermisos(
       user.permisos_globales || [],
@@ -358,10 +370,12 @@ export class AuthService {
       fecha_inicio,
     } = registerDto;
 
+    const normalizedEmail = email.toLowerCase();
+
     const { data: exist } = await this.supabase
       .from('usuarios')
       .select('id')
-      .or(`email.eq.${email},username.eq.${username}`)
+      .or(`email.eq.${normalizedEmail},username.eq.${username}`)
       .limit(1);
     if (exist?.length)
       throw new UnauthorizedException('Email o usuario ya existen');
@@ -372,7 +386,7 @@ export class AuthService {
       {
         nombre_completo,
         username,
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
         direccion: direccion || null,
         telefono: telefono || null,
